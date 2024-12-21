@@ -1,96 +1,77 @@
 from flask import Flask, request, jsonify, render_template
-import json
-import random
-from linebot import LineBotApi
-from linebot.models import TextSendMessage
+from linebot import LineBotApi, WebhookHandler
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.exceptions import InvalidSignatureError
 
 app = Flask(__name__)
 
-# LINE API setup
-line_bot_api = LineBotApi('KBhqBQD9mgE86m3TrRoLtzY5cnmORMMQTd0z1WFmcu9lladnvk+7DSaCRrFgnUieGo1r5MWGUFv3r0pgLj4ITZkZhFlxwj9pUhGCNxQpKmql8hvbp7ocSFlOiutyixMPoH0Yea9C40iWpgHk4cCI3gdB04t89/1O/w1cDnyilFU=')
+# LINE API Credentials (ใส่ข้อมูลจาก LINE Developers Console)
+CHANNEL_ACCESS_TOKEN = "YOUR_CHANNEL_ACCESS_TOKEN"
+CHANNEL_SECRET = "YOUR_CHANNEL_SECRET"
 
-# ฟังก์ชันส่งข้อมูลการจองไปยัง LINE
-def send_to_line(message):
-    line_bot_api.push_message('U5f9e64ace2712094d06492483fde6468', TextSendMessage(text=message))
+line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(CHANNEL_SECRET)
 
-# ฟังก์ชันตรวจสอบจำนวนโต๊ะที่จอง
-def check_table_limit(date, table_size):
-    with open('reservations.json', 'r') as f:
-        reservations = json.load(f)
-    count = sum(1 for r in reservations if r['date'] == date and r['table_size'] == table_size)
-    limit = 2 if table_size == 'small' else 8
-    return count < limit
+# 1. Webhook สำหรับ LINE
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    signature = request.headers.get("X-Line-Signature")
+    body = request.get_data(as_text=True)
 
-# หน้าเว็บหลัก
-@app.route('/')
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        return jsonify({"message": "Invalid signature"}), 400
+
+    return "OK", 200
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    user_message = event.message.text
+
+    # ตอบกลับผู้ใช้
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=f"คุณส่งข้อความว่า: {user_message}")
+    )
+
+    # ส่งข้อความไปหาแอดมิน
+    admin_id = "U5f9e64ace2712094d06492483fde6468"  # LINE User ID ที่ต้องการส่งข้อความ
+    line_bot_api.push_message(
+        admin_id,
+        TextSendMessage(text=f"ผู้ใช้ส่งข้อความว่า: {user_message}")
+    )
+
+# 2. เส้นทางสำหรับหน้าเว็บ
+@app.route("/frontend", methods=["GET"])
+def frontend():
+    return render_template("index.html")
+
+# 3. เส้นทางสำหรับรับข้อมูลจากหน้าเว็บและส่งไปยัง LINE User
+@app.route("/send-to-line", methods=["POST"])
+def send_to_line():
+    try:
+        data = request.json
+        message1 = data["message1"]  # ข้อความช่องที่ 1
+        message2 = data["message2"]  # ข้อความช่องที่ 2
+        option = data["option"]      # ตัวเลือกที่เลือก
+        date = data["date"]          # วันที่
+        time = data["time"]          # เวลา
+
+        # สร้างข้อความที่จะส่งไปยัง LINE User
+        full_message = f"ข้อความ 1: {message1}\nข้อความ 2: {message2}\nตัวเลือก: {option}\nวันที่: {date}\nเวลา: {time}"
+
+        # ส่งข้อความไปยัง LINE User
+        admin_id = "U5f9e64ace2712094d06492483fde6468"  # LINE User ID
+        line_bot_api.push_message(admin_id, TextSendMessage(text=full_message))
+        return jsonify({"status": "success", "message": "Message sent!"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+# 4. เส้นทางหน้าหลัก
+@app.route("/", methods=["GET"])
 def home():
-    return render_template('index.html')
+    return "LINE Bot Webhook is running!", 200
 
-# รับข้อมูลการจอง
-@app.route('/api/book', methods=['POST'])
-def book_table():
-    data = request.get_json()
-    name = data['name']
-    line_id = data['line_id']
-    table_size = data['table_size']
-    date = data['date']
-    time = data['time']
-
-    # ตรวจสอบลิมิตโต๊ะ
-    if not check_table_limit(date, table_size):
-        return jsonify({'status': 'error', 'message': 'Table limit reached for this date and table size'}), 400
-
-    # สร้างหมายเลขคิว
-    queue_number = f"{date.replace('-', '')}-{random.randint(1000, 9999)}"
-
-    # บันทึกข้อมูลการจองลงใน JSON
-    with open('reservations.json', 'r') as f:
-        reservations = json.load(f)
-
-    reservations.append({
-        'name': name,
-        'line_id': line_id,
-        'table_size': table_size,
-        'date': date,
-        'time': time,
-        'queue_number': queue_number
-    })
-
-    with open('reservations.json', 'w') as f:
-        json.dump(reservations, f, indent=4)
-
-    # ส่งข้อมูลไปยัง LINE ของแอดมิน
-    message = f"New reservation:\nName: {name}\nLINE ID: {line_id}\nTable Size: {table_size}\nDate: {date}\nTime: {time}\nQueue Number: {queue_number}"
-    send_to_line(message)
-
-    return jsonify({'status': 'success', 'queue_number': queue_number})
-
-# ดูการจองทั้งหมด
-@app.route('/api/reservations', methods=['GET'])
-def get_reservations():
-    try:
-        with open('reservations.json', 'r') as f:
-            reservations = json.load(f)
-        return jsonify({'status': 'success', 'reservations': reservations})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-# ลบการจองตามหมายเลขคิว
-@app.route('/api/reservations/<queue_number>', methods=['DELETE'])
-def delete_reservation(queue_number):
-    try:
-        with open('reservations.json', 'r') as f:
-            reservations = json.load(f)
-        
-        reservations = [r for r in reservations if r['queue_number'] != queue_number]
-
-        with open('reservations.json', 'w') as f:
-            json.dump(reservations, f, indent=4)
-
-        return jsonify({'status': 'success', 'message': f'Reservation with queue number {queue_number} deleted.'})
-
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
