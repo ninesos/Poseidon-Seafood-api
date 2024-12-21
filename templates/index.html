@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Posaidon Seafood</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .navbar {
+      background-color: #003366;
+    }
+    .navbar-brand, .nav-link {
+      color: #ffffff !important;
+    }
+    .hero-section {
+      background: url('seafood-banner.jpg') center/cover no-repeat;
+      height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      text-shadow: 2px 2px 5px #000;
+    }
+    .hero-section h1 {
+      font-size: 3.5rem;
+    }
+    .footer {
+      background-color: #003366;
+      color: white;
+    }
+    .footer a {
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">Posaidon Seafood</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#booking">Reservation</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <div class="hero-section text-center">
+    <h1>Welcome to Posaidon Seafood</h1>
+    <p>Experience the Freshness from the Ocean</p>
+  </div>
+
+  <!-- About Section -->
+  <section id="about" class="py-5">
+    <div class="container text-center">
+      <h2>About Us</h2>
+      <p class="lead">At Posaidon Seafood, we serve the freshest and finest seafood, prepared with passion and care.</p>
+      <div class="row">
+        <div class="col-md-4">
+          <img src="seafood-dish1.jpg" class="img-fluid rounded" alt="Dish 1">
+        </div>
+        <div class="col-md-4">
+          <img src="seafood-dish2.jpg" class="img-fluid rounded" alt="Dish 2">
+        </div>
+        <div class="col-md-4">
+          <img src="seafood-dish3.jpg" class="img-fluid rounded" alt="Dish 3">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Booking Section -->
+  <section id="booking" class="py-5 bg-light">
+    <div class="container">
+      <h2 class="text-center">Reserve Your Table</h2>
+      <form id="bookingForm" action="http://localhost:5000/api/book" method="POST">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <input type="text" name="name" class="form-control" placeholder="Your Name" required>
+          </div>
+          <div class="col-md-6">
+            <input type="text" name="line_id" class="form-control" placeholder="LINE ID" required>
+          </div>
+          <div class="col-md-6">
+            <select name="table_size" class="form-control" required>
+              <option value="small">Small Table</option>
+              <option value="large">Large Table</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="date" name="date" class="form-control" required>
+          </div>
+          <div class="col-md-3">
+            <input type="time" name="time" class="form-control" required>
+          </div>
+          <div class="col-12 text-center">
+            <button type="submit" class="btn btn-primary">Book Now</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-5">
+    <div class="container text-center">
+      <h2>Contact Us</h2>
+      <p>Have questions? Reach us on Line or call us directly!</p>
+      <a href="https://line.me/ti/p/nine020451" target="_blank" class="btn btn-success">Contact on LINE</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer py-3">
+    <div class="container text-center">
+      <p>&copy; 2024 Posaidon Seafood. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
